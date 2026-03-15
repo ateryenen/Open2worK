@@ -19,7 +19,7 @@ This project is a local proof of concept that validates a deterministic desktop 
 ## Project Structure
 
 ```text
-PcControl/
+Open2worK/
 ├─ app/
 │  ├─ __init__.py
 │  ├─ main.py
@@ -87,7 +87,7 @@ python -m app.main --command "Open Notepad, type hello, and save as test.txt" --
 image-based click POC (use a template screenshot):
 
 ```powershell
-python -m app.main --command "image poc" --image-template "C:\\GITHUB\\PcControl\\assets\\T357.png" --image-timeout 10 --image-confidence 0.9
+python -m app.main --command "image poc" --image-template "C:\\GITHUB\\Open2worK\\assets\\T357.png" --image-timeout 10 --image-confidence 0.9
 ```
 
 This mode only runs image locate + click once, and reports success/failure in terminal.
@@ -101,7 +101,7 @@ python -m app.main --command "請用圖片點擊桌面上的 T357 捷徑兩次" 
 execution tree cache (for faster repeated image actions):
 
 - image click now uses cache-first lookup, then falls back to full-screen scan.
-- cache file: `C:/GITHUB/PcControl/.cache/execution_tree.json`
+- cache file: `C:/GITHUB/Open2worK/.cache/execution_tree.json`
 - after successful click, object position is updated in cache for next run.
 - if cached point misses repeatedly, cache entry is auto-evicted.
 

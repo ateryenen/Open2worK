@@ -7,7 +7,7 @@ import pyautogui
 
 
 class ExecutionTreeCache:
-    def __init__(self, cache_path: str = "C:/GITHUB/PcControl/.cache/execution_tree.json") -> None:
+    def __init__(self, cache_path: str = "C:/GITHUB/Open2worK/.cache/execution_tree.json") -> None:
         self.cache_path = Path(os.path.expandvars(cache_path)).expanduser()
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
         self._data = self._load()

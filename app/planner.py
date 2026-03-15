@@ -99,7 +99,7 @@ def local_llm_planner_interface(
         "Build steps only from supported actions. "
         "User request: "
         f"{user_input}\n"
-        "If user asks image click and template path is missing, use C:/GITHUB/PcControl/assets/T357.png. "
+        "If user asks image click and template path is missing, use C:/GITHUB/Open2worK/assets/T357.png. "
         "If user asks to click twice, set click_count=2. "
         "JSON schema hint: "
         f"{json.dumps(schema_hint, ensure_ascii=False)}"
@@ -151,7 +151,7 @@ def _local_llm_planner_chat(
     chat_endpoint = endpoint.replace("/api/generate", "/api/chat")
     prompt = (
         "Return ONLY valid JSON plan. Supported actions: open_app, wait, type_text, save_file, click_image. "
-        "If image template path missing, use C:/GITHUB/PcControl/assets/T357.png. "
+        "If image template path missing, use C:/GITHUB/Open2worK/assets/T357.png. "
         "If user says click twice, set click_count=2. "
         f"User request: {user_input}"
     )
@@ -233,7 +233,7 @@ def _normalize_plan_dict(plan_dict: dict, user_input: str) -> dict:
                 or template_path.lower() == "for click_image"
                 or template_path.lower().startswith("for ")
             ):
-                template_path = "C:/GITHUB/PcControl/assets/T357.png"
+                template_path = "C:/GITHUB/Open2worK/assets/T357.png"
             normalized_steps.append(
                 {
                     "action": "click_image",
