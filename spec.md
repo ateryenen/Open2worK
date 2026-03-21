@@ -22,11 +22,11 @@ AI Desktop Agent - Proof of Concept
 
 
 
-Version: v0.1  
+Version: v0.2.0  
 
 Author: Ater Chen  
 
-Status: POC Draft
+Status: POC Active
 
 
 

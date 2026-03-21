@@ -9,6 +9,10 @@ This project is a local proof of concept that validates a deterministic desktop 
 4. Verify output file exists
 5. Print step-by-step logs
 
+## Version
+- Current documented version: v0.2.0
+- Updated at: 2026-03-17
+
 ## Scope
 - Windows only
 - Notepad only
@@ -131,3 +135,25 @@ Open Notepad, type "Hello Ater", and save it to Desktop as test.txt
 - Default monitor model is `phi:latest`.
 - Monitor does not require image-vision model now; it sends Python-generated JSON state to LLM.
 - If monitor endpoint returns 404, code will auto fallback from `/api/generate` to `/api/chat` once.
+
+## Current Automation Status (2026-03-17)
+- Editor flow test now executes real actions via `/api/run-direct`.
+- Step library currently supports:
+	- `open_app`
+	- `type_text`
+	- `key_press`
+	- `click_image`
+	- `move_mouse_horizontal`
+	- `mouse_click`
+	- `save_file`
+	- `wait`
+- `mouse_click` and `click_image` support click mode switch:
+	- `mouse_event` (legacy)
+	- `send_input` (new)
+- `click_image` and `mouse_click` support `press_duration`.
+- Image matching uses fallback strategy (color/gray + reduced confidence) to reduce locate timeout.
+
+### RDP / Remote Desktop Limitation
+- When target app is running inside a remote desktop session, local injected input (`mouse_event`, `SendInput`, `PostMessage`) can be blocked or not forwarded by RDP client.
+- This is a Windows session/desktop boundary behavior, not only a focus issue.
+- If remote target still ignores click, prefer running automation in the same remote session or use app-native automation interfaces (e.g., COM/API) when available.
