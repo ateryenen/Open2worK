@@ -1,6 +1,7 @@
 import os
 import subprocess
 import time
+import ctypes
 from pathlib import Path
 from typing import Any, Optional
 
@@ -11,6 +12,37 @@ from pywinauto import Application, Desktop
 from .execution_tree import ExecutionTreeCache
 from .schemas import ExecutionPlan
 from .utils import log
+
+
+_MOUSEEVENTF_LEFTDOWN = 0x0002
+_MOUSEEVENTF_LEFTUP = 0x0004
+_MOUSEEVENTF_RIGHTDOWN = 0x0008
+_MOUSEEVENTF_RIGHTUP = 0x0010
+
+# SendInput 結構（繼承者 API，對 UIPI 境界相容性更佳）
+_INPUT_MOUSE = 0
+
+
+class _MOUSEINPUT(ctypes.Structure):
+    _fields_ = [
+        ("dx",          ctypes.c_long),
+        ("dy",          ctypes.c_long),
+        ("mouseData",   ctypes.c_ulong),
+        ("dwFlags",     ctypes.c_ulong),
+        ("time",        ctypes.c_ulong),
+        ("dwExtraInfo", ctypes.c_size_t),  # ULONG_PTR
+    ]
+
+
+class _INPUT_UNION(ctypes.Union):
+    _fields_ = [("mi", _MOUSEINPUT)]
+
+
+class _INPUT(ctypes.Structure):
+    _fields_ = [
+        ("type",   ctypes.c_ulong),
+        ("_input", _INPUT_UNION),
+    ]
 
 
 class DeterministicExecutor:
@@ -32,6 +64,12 @@ class DeterministicExecutor:
                     time.sleep(step.seconds)
                 elif step.action == "type_text":
                     self._type_text(step.text)
+                elif step.action == "key_press":
+                    self._key_press(
+                        key=step.key,
+                        repeat=step.repeat,
+                        interval=step.interval,
+                    )
                 elif step.action == "save_file":
                     self._save_file(step.path)
                 elif step.action == "click_image":
@@ -40,6 +78,22 @@ class DeterministicExecutor:
                         confidence=step.confidence,
                         timeout_seconds=step.timeout_seconds,
                         click_count=step.click_count,
+                        press_duration=step.press_duration,
+                        click_mode=step.click_mode,
+                    )
+                elif step.action == "move_mouse_horizontal":
+                    self._move_mouse_horizontal(
+                        direction=step.direction,
+                        pixels=step.pixels,
+                        duration=step.duration,
+                    )
+                elif step.action == "mouse_click":
+                    self._mouse_click(
+                        button=step.button,
+                        click_count=step.click_count,
+                        interval=step.interval,
+                        press_duration=step.press_duration,
+                        click_mode=step.click_mode,
                     )
             except Exception as exc:
                 self._emit_monitor_event("error_step", idx, step, {"error": str(exc)})
@@ -58,10 +112,28 @@ class DeterministicExecutor:
             payload["target"] = step.target
         if hasattr(step, "text"):
             payload["text_preview"] = str(step.text)[:80]
+        if hasattr(step, "key"):
+            payload["key"] = step.key
+        if hasattr(step, "repeat"):
+            payload["repeat"] = step.repeat
         if hasattr(step, "path"):
             payload["path"] = step.path
         if hasattr(step, "seconds"):
             payload["seconds"] = step.seconds
+        if hasattr(step, "direction"):
+            payload["direction"] = step.direction
+        if hasattr(step, "pixels"):
+            payload["pixels"] = step.pixels
+        if hasattr(step, "duration"):
+            payload["duration"] = step.duration
+        if hasattr(step, "button"):
+            payload["button"] = step.button
+        if hasattr(step, "click_count"):
+            payload["click_count"] = step.click_count
+        if hasattr(step, "interval"):
+            payload["interval"] = step.interval
+        if hasattr(step, "press_duration"):
+            payload["press_duration"] = step.press_duration
         if extra:
             payload.update(extra)
         self.monitor.observe_step(event, payload)
@@ -128,6 +200,34 @@ class DeterministicExecutor:
         self.window.type_keys("^a{BACKSPACE}", pause=0.01)
         time.sleep(0.1)
         self.window.type_keys(text, with_spaces=True, pause=0.01)
+
+    def _key_press(self, key: str, repeat: int, interval: float) -> None:
+        normalized = str(key or "").strip().lower()
+        if not normalized:
+            raise ValueError("key_press requires non-empty key")
+
+        count = max(1, int(repeat))
+        gap = max(0.0, float(interval))
+
+        if self.window is not None:
+            try:
+                self.window.set_focus()
+            except Exception:
+                pass
+
+        for idx in range(count):
+            if "+" in normalized:
+                combo = [part.strip() for part in normalized.split("+") if part.strip()]
+                if not combo:
+                    raise ValueError(f"Invalid key combination: {key}")
+                pyautogui.hotkey(*combo)
+            else:
+                pyautogui.press(normalized)
+
+            if idx < count - 1:
+                time.sleep(gap)
+
+        log(f"key pressed: {normalized}, repeat={count}, interval={gap}")
 
     def _save_file(self, target_path: str) -> None:
         if self.window is None:
@@ -271,6 +371,8 @@ class DeterministicExecutor:
         confidence: float,
         timeout_seconds: float,
         click_count: int,
+        press_duration: float,
+        click_mode: str = "mouse_event",
     ) -> None:
         template = Path(os.path.expandvars(template_path)).expanduser()
         if not template.exists():
@@ -284,7 +386,7 @@ class DeterministicExecutor:
             point = self._locate_image_center(template, confidence, region=region)
             if point is not None:
                 log(f"execution-tree cache hit: {object_name} @({point.x},{point.y})")
-                self._click_point(point.x, point.y, click_count)
+                self._click_point(point.x, point.y, click_count, press_duration=press_duration, click_mode=click_mode)
                 self.execution_tree.update_hit(
                     template_path=str(template),
                     object_name=object_name,
@@ -307,7 +409,7 @@ class DeterministicExecutor:
                 point = None
 
             if point is not None:
-                self._click_point(point.x, point.y, click_count)
+                self._click_point(point.x, point.y, click_count, press_duration=press_duration, click_mode=click_mode)
                 self.execution_tree.update_hit(
                     template_path=str(template),
                     object_name=object_name,
@@ -329,26 +431,98 @@ class DeterministicExecutor:
         raise RuntimeError(f"Image locate timeout: {template}")
 
     def _locate_image_center(self, template: Path, confidence: float, region: tuple[int, int, int, int] | None = None):
-        try:
-            kwargs = {"confidence": confidence}
-            if region is not None:
-                kwargs["region"] = region
-            return pyautogui.locateCenterOnScreen(str(template), **kwargs)
-        except NotImplementedError:
-            try:
-                if region is not None:
-                    return pyautogui.locateCenterOnScreen(str(template), region=region)
-                return pyautogui.locateCenterOnScreen(str(template))
-            except (pyautogui.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-                return None
-        except (pyautogui.ImageNotFoundException, pyscreeze.ImageNotFoundException):
-            return None
+        confidence_levels = [float(confidence)]
+        for fallback in (confidence - 0.05, confidence - 0.1, confidence - 0.15):
+            if fallback >= 0.6:
+                confidence_levels.append(round(float(fallback), 2))
 
-    def _click_point(self, x: int, y: int, click_count: int) -> None:
-        pyautogui.moveTo(x, y, duration=0.1)
-        for _ in range(click_count):
-            pyautogui.click(x, y)
-            time.sleep(0.08)
+        seen: set[tuple[float, bool]] = set()
+        attempts: list[tuple[float, bool]] = []
+        for level in confidence_levels:
+            for grayscale in (False, True):
+                key = (level, grayscale)
+                if key not in seen:
+                    seen.add(key)
+                    attempts.append(key)
+
+        for level, grayscale in attempts:
+            try:
+                kwargs = {"confidence": level, "grayscale": grayscale}
+                if region is not None:
+                    kwargs["region"] = region
+                point = pyautogui.locateCenterOnScreen(str(template), **kwargs)
+                if point is not None:
+                    return point
+            except NotImplementedError:
+                try:
+                    if region is not None:
+                        point = pyautogui.locateCenterOnScreen(str(template), region=region, grayscale=grayscale)
+                    else:
+                        point = pyautogui.locateCenterOnScreen(str(template), grayscale=grayscale)
+                    if point is not None:
+                        return point
+                except (pyautogui.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+                    continue
+            except (pyautogui.ImageNotFoundException, pyscreeze.ImageNotFoundException):
+                continue
+
+        return None
+
+    def _click_point(self, x: int, y: int, click_count: int, press_duration: float = 0.03, click_mode: str = "mouse_event") -> None:
+        pyautogui.moveTo(x, y, duration=0.12)
+        time.sleep(0.05)
+        for idx in range(click_count):
+            self._dispatch_click("left", press_duration=press_duration, mode=click_mode)
+            if idx < click_count - 1:
+                time.sleep(0.1)
+        pos = pyautogui.position()
+        log(f"click dispatched @({pos.x},{pos.y}), count={click_count}, press={press_duration}s, mode={click_mode}")
+
+    def _move_mouse_horizontal(self, direction: str, pixels: int, duration: float) -> None:
+        if direction not in {"left", "right"}:
+            raise ValueError(f"Unsupported direction: {direction}")
+        dx = -int(pixels) if direction == "left" else int(pixels)
+        pyautogui.moveRel(dx, 0, duration=max(0.0, float(duration)))
+        pos = pyautogui.position()
+        log(f"mouse moved {direction} by {pixels}px -> ({pos.x},{pos.y})")
+
+    def _mouse_click(self, button: str, click_count: int, interval: float, press_duration: float, click_mode: str = "mouse_event") -> None:
+        if button not in {"left", "right"}:
+            raise ValueError(f"Unsupported mouse button: {button}")
+        pos = pyautogui.position()
+        for idx in range(max(1, int(click_count))):
+            self._dispatch_click(button, press_duration=press_duration, mode=click_mode)
+            if idx < click_count - 1:
+                time.sleep(max(0.0, float(interval)))
+        log(f"mouse click dispatched button={button}, count={click_count}, press={press_duration}s, mode={click_mode} @({pos.x},{pos.y})")
+
+    def _dispatch_click(self, button: str, press_duration: float = 0.03, mode: str = "mouse_event") -> None:
+        hold = max(0.0, float(press_duration))
+        if os.name == "nt":
+            down_flag = _MOUSEEVENTF_LEFTDOWN if button == "left" else _MOUSEEVENTF_RIGHTDOWN
+            up_flag   = _MOUSEEVENTF_LEFTUP   if button == "left" else _MOUSEEVENTF_RIGHTUP
+            if mode == "send_input":
+                inp = _INPUT()
+                inp.type = _INPUT_MOUSE
+                inp._input.mi.dx = 0
+                inp._input.mi.dy = 0
+                inp._input.mi.mouseData = 0
+                inp._input.mi.time = 0
+                inp._input.mi.dwExtraInfo = 0
+                inp._input.mi.dwFlags = down_flag
+                ctypes.windll.user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_INPUT))
+                time.sleep(hold)
+                inp._input.mi.dwFlags = up_flag
+                ctypes.windll.user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_INPUT))
+                return
+            else:  # mouse_event（原版保留）
+                ctypes.windll.user32.mouse_event(down_flag, 0, 0, 0, 0)
+                time.sleep(hold)
+                ctypes.windll.user32.mouse_event(up_flag, 0, 0, 0, 0)
+                return
+        pyautogui.mouseDown(button=button)
+        time.sleep(hold)
+        pyautogui.mouseUp(button=button)
 
     def _region_around(self, x: int, y: int, width: int, height: int) -> tuple[int, int, int, int]:
         screen_w, screen_h = pyautogui.size()

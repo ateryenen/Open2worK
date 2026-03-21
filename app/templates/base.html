@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-TW" id="html-root">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>{% block title %}Open2work{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#ec5b13",
+            "background-light": "#f8f6f6",
+            "background-dark": "#221610",
+          },
+          fontFamily: { "display": ["Public Sans", "PingFang TC", "Microsoft JhengHei", "sans-serif"] },
+          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: "Public Sans", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .fill-1 { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    {% block extra_style %}{% endblock %}
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen antialiased">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+  <div class="layout-container flex h-full grow flex-col">
+
+    <!-- Top Navigation -->
+    <header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 px-6 py-3 lg:px-8 sticky top-0 z-50">
+      <div class="flex items-center gap-8">
+        <a href="/" class="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
+          <span class="material-symbols-outlined text-2xl">account_tree</span>
+          <span class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">Open2work</span>
+        </a>
+      </div>
+      <div class="flex flex-1 justify-end items-center gap-4">
+        <label class="hidden sm:flex flex-col min-w-40 h-10 max-w-md w-full">
+          <div class="flex w-full flex-1 items-stretch rounded-xl bg-slate-100 dark:bg-zinc-800 border border-transparent focus-within:border-primary/30 transition-all">
+            <div class="text-slate-400 flex items-center justify-center pl-3">
+              <span class="material-symbols-outlined text-lg">search</span>
+            </div>
+            <input class="w-full border-none bg-transparent focus:ring-0 text-sm placeholder:text-slate-400 px-3"
+                   placeholder="搜尋..." id="global-search"/>
+          </div>
+        </label>
+        <div class="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
+          <!-- Dark mode toggle -->
+          <button onclick="toggleDark()" title="切換深色模式"
+                  class="flex items-center justify-center h-9 w-9 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-xl" id="dark-icon">dark_mode</span>
+          </button>
+          <a href="/editor" class="flex items-center justify-center rounded-xl h-10 px-4 gap-2 bg-primary text-white hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 text-sm font-bold">
+            <span class="material-symbols-outlined text-lg">add</span>
+            <span class="hidden md:inline">新增執行樹</span>
+          </a>
+          <button class="flex items-center gap-2 bg-slate-100 dark:bg-zinc-800 p-1 pr-3 rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">
+            <div class="size-8 rounded-full bg-slate-300 dark:bg-zinc-600 flex items-center justify-center overflow-hidden">
+              <span class="material-symbols-outlined text-slate-500 text-xl">person</span>
+            </div>
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 hidden md:inline">管理員</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex flex-1 flex-col lg:flex-row">
+      <!-- Sidebar -->
+      <aside class="w-full lg:w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 p-4 flex flex-col gap-6 lg:sticky lg:top-[57px] lg:h-[calc(100vh-57px)] overflow-y-auto">
+        <div>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 px-3">主選單</p>
+          <div class="flex flex-col gap-1">
+            <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
+               {% if active == 'dashboard' %}bg-primary/10 text-primary border border-primary/10{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800{% endif %}">
+              <span class="material-symbols-outlined text-xl {% if active == 'dashboard' %}fill-1{% endif %}">dashboard</span>
+              <span class="text-sm {% if active == 'dashboard' %}font-bold{% else %}font-semibold{% endif %}">執行樹</span>
+            </a>
+            <a href="/editor" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
+               {% if active == 'editor' %}bg-primary/10 text-primary border border-primary/10{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800{% endif %}">
+              <span class="material-symbols-outlined text-xl {% if active == 'editor' %}fill-1{% endif %}">account_tree</span>
+              <span class="text-sm {% if active == 'editor' %}font-bold{% else %}font-semibold{% endif %}">SOP 編排器</span>
+            </a>
+            <a href="/library" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
+               {% if active == 'library' %}bg-primary/10 text-primary border border-primary/10{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800{% endif %}">
+              <span class="material-symbols-outlined text-xl {% if active == 'library' %}fill-1{% endif %}">inventory_2</span>
+              <span class="text-sm {% if active == 'library' %}font-bold{% else %}font-semibold{% endif %}">資源庫</span>
+            </a>
+            <a href="/workspace" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors
+               {% if active == 'workspace' %}bg-primary/10 text-primary border border-primary/10{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800{% endif %}">
+              <span class="material-symbols-outlined text-xl {% if active == 'workspace' %}fill-1{% endif %}">monitoring</span>
+              <span class="text-sm {% if active == 'workspace' %}font-bold{% else %}font-semibold{% endif %}">工作台</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Run Panel -->
+        <div class="mt-auto">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3 px-3">快速執行</p>
+          <div class="rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 p-4 space-y-3">
+            <textarea id="quick-input" rows="3"
+              class="w-full text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg p-2 resize-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400"
+              placeholder="輸入指令，例如：開啟 Notepad 輸入文字..."></textarea>
+            <div class="flex gap-2">
+              <button onclick="quickRun(false)"
+                class="flex-1 h-8 text-xs font-bold bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">play_arrow</span>執行
+              </button>
+              <button onclick="quickRun(true)"
+                class="h-8 px-3 text-xs font-bold bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-zinc-600 transition-colors">
+                試運行
+              </button>
+            </div>
+            <div id="quick-result" class="hidden text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded p-2 max-h-20 overflow-y-auto"></div>
+          </div>
+          <div class="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-slate-900 dark:text-slate-100">自動化中心</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <p class="text-[10px] text-slate-500 font-medium">v0.1 · POC</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <section class="flex-1 flex flex-col bg-slate-50 dark:bg-background-dark/30 min-w-0">
+        {% block content %}{% endblock %}
+      </section>
+    </main>
+
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="fixed bottom-6 right-6 z-[100] hidden">
+  <div class="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl shadow-xl px-4 py-3 min-w-[240px]">
+    <span class="material-symbols-outlined text-xl" id="toast-icon">check_circle</span>
+    <span class="text-sm font-semibold" id="toast-msg"></span>
+  </div>
+</div>
+
+<script>
+  // Dark mode
+  function toggleDark() {
+    const html = document.getElementById('html-root');
+    html.classList.toggle('dark');
+    document.getElementById('dark-icon').textContent = html.classList.contains('dark') ? 'light_mode' : 'dark_mode';
+    localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+  }
+  (function() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.getElementById('html-root').classList.add('dark');
+      document.getElementById('dark-icon').textContent = 'light_mode';
+    }
+  })();
+
+  // Toast
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent = msg;
+    icon.textContent = type === 'error' ? 'error' : 'check_circle';
+    icon.className = 'material-symbols-outlined text-xl ' + (type === 'error' ? 'text-red-500' : 'text-emerald-500');
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 3500);
+  }
+
+  // Quick run
+  async function quickRun(dryRun) {
+    const input = document.getElementById('quick-input').value.trim();
+    if (!input) { showToast('請輸入指令', 'error'); return; }
+    const resultEl = document.getElementById('quick-result');
+    resultEl.classList.remove('hidden');
+    resultEl.textContent = '執行中...';
+    try {
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_input: input, dry_run: dryRun })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        resultEl.className = 'text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded p-2 max-h-20 overflow-y-auto';
+        resultEl.textContent = dryRun ? '試運行成功：' + JSON.stringify(data.plan?.steps?.length ?? 0) + ' 步驟' : '執行成功！';
+        showToast(dryRun ? '計劃預覽完成' : '執行成功！');
+      } else {
+        resultEl.className = 'text-[10px] font-mono text-red-500 bg-red-50 dark:bg-red-900/20 rounded p-2 max-h-20 overflow-y-auto';
+        resultEl.textContent = '錯誤：' + data.error;
+        showToast('執行失敗：' + data.error, 'error');
+      }
+    } catch(e) {
+      resultEl.textContent = '網路錯誤';
+      showToast('無法連接伺服器', 'error');
+    }
+  }
+</script>
+{% block extra_script %}{% endblock %}
+</body>
+</html>

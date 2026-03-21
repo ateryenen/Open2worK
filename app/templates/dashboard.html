@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}執行樹 - Open2work{% endblock %}
+
+{% block content %}
+<div class="px-6 py-6 lg:px-8">
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <div class="space-y-1">
+      <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">執行樹</h1>
+      <p class="text-slate-500 dark:text-slate-400 max-w-2xl text-base">監控並編排桌面自動化工作流。</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 bg-slate-100 dark:bg-primary/10 p-1 rounded-xl">
+        <button id="btn-grid" onclick="setView('grid')"
+          class="px-4 py-1.5 rounded-lg bg-white dark:bg-primary text-slate-900 dark:text-white shadow-sm text-sm font-semibold transition-all">
+          網格檢視
+        </button>
+        <button id="btn-list" onclick="setView('list')"
+          class="px-4 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-primary text-sm font-medium transition-all">
+          列表檢視
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="border-b border-slate-200 dark:border-primary/20 mb-6">
+    <div class="flex flex-wrap gap-8">
+      <button class="pb-3 text-sm font-bold text-primary border-b-2 border-primary">全部</button>
+      <button class="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary border-b-2 border-transparent hover:border-primary/30">資料同步</button>
+      <button class="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary border-b-2 border-transparent hover:border-primary/30">桌面作業</button>
+      <button class="pb-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary border-b-2 border-transparent hover:border-primary/30">安全性</button>
+    </div>
+  </div>
+
+  <!-- Status Filters -->
+  <div class="flex flex-wrap gap-3 mb-8">
+    <button class="flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-white text-sm font-semibold">
+      <span>全部狀態</span>
+    </button>
+    <button class="flex items-center gap-2 h-9 px-4 rounded-xl bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 transition-colors">
+      <span class="w-2 h-2 rounded-full bg-green-500"></span><span>執行中</span>
+    </button>
+    <button class="flex items-center gap-2 h-9 px-4 rounded-xl bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 transition-colors">
+      <span class="w-2 h-2 rounded-full bg-amber-500"></span><span>草稿</span>
+    </button>
+    <button class="flex items-center gap-2 h-9 px-4 rounded-xl bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 transition-colors">
+      <span class="w-2 h-2 rounded-full bg-red-500"></span><span>失敗</span>
+    </button>
+  </div>
+
+  <!-- Grid View -->
+  <div id="view-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <!-- Card: Notepad 自動化 -->
+    <div class="group bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/50 transition-all">
+      <div class="relative h-32 w-full bg-slate-100 dark:bg-primary/10 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+        <div class="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-50 transition-opacity">
+          <span class="material-symbols-outlined text-6xl text-primary">description</span>
+        </div>
+        <div class="absolute top-3 left-3 px-2 py-1 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-[10px] font-bold uppercase tracking-wider">執行中</div>
+        <div class="absolute top-3 right-3 flex gap-1">
+          <button onclick="runTree('notepad')" title="執行"
+            class="p-1.5 bg-white/90 dark:bg-zinc-800/90 rounded-lg text-primary hover:bg-primary hover:text-white transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-sm">play_arrow</span>
+          </button>
+          <a href="/editor/notepad" title="編輯"
+            class="p-1.5 bg-white/90 dark:bg-zinc-800/90 rounded-lg text-slate-500 hover:text-primary transition-colors shadow-sm flex items-center">
+            <span class="material-symbols-outlined text-sm">edit</span>
+          </a>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 class="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight">Notepad 自動化</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">目標：<span class="font-semibold text-primary">記事本</span></p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="flex flex-col">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">步驟</span>
+            <span class="text-base font-bold text-slate-800 dark:text-slate-200">4</span>
+          </div>
+          <div class="flex flex-col border-l border-slate-100 dark:border-primary/10 pl-4">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">成功率</span>
+            <span class="text-base font-bold text-green-600">95%</span>
+          </div>
+          <div class="flex flex-col border-l border-slate-100 dark:border-primary/10 pl-4">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">快取</span>
+            <span class="text-base font-bold text-slate-800 dark:text-slate-200">88%</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-primary/10">
+          <div class="flex items-center gap-1">
+            <button onclick="runTree('notepad')" class="p-2 text-slate-400 hover:text-primary transition-colors" title="立即執行">
+              <span class="material-symbols-outlined text-xl">play_circle</span>
+            </button>
+            <a href="/editor/notepad" class="p-2 text-slate-400 hover:text-primary transition-colors" title="編輯">
+              <span class="material-symbols-outlined text-xl">edit</span>
+            </a>
+            <button class="p-2 text-slate-400 hover:text-primary transition-colors" title="複製">
+              <span class="material-symbols-outlined text-xl">content_copy</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-1">
+            <button class="p-2 text-slate-400 hover:text-red-500 transition-colors" title="刪除">
+              <span class="material-symbols-outlined text-xl">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: 圖片點擊 -->
+    <div class="group bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/50 transition-all">
+      <div class="relative h-32 w-full bg-slate-100 dark:bg-primary/10 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-tr from-primary/10 via-blue-100/30 to-transparent"></div>
+        <div class="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-50 transition-opacity">
+          <span class="material-symbols-outlined text-6xl text-primary">ads_click</span>
+        </div>
+        <div class="absolute top-3 left-3 px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider">草稿</div>
+        <div class="absolute top-3 right-3 flex gap-1">
+          <a href="/editor/image-click" title="編輯"
+            class="p-1.5 bg-white/90 dark:bg-zinc-800/90 rounded-lg text-slate-500 hover:text-primary transition-colors shadow-sm flex items-center">
+            <span class="material-symbols-outlined text-sm">edit</span>
+          </a>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 class="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight">圖片點擊流程</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">目標：<span class="font-semibold text-primary">視覺識別</span></p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="flex flex-col">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">步驟</span>
+            <span class="text-base font-bold text-slate-800 dark:text-slate-200">2</span>
+          </div>
+          <div class="flex flex-col border-l border-slate-100 dark:border-primary/10 pl-4">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">成功率</span>
+            <span class="text-base font-bold text-slate-400">未執行</span>
+          </div>
+          <div class="flex flex-col border-l border-slate-100 dark:border-primary/10 pl-4">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">快取</span>
+            <span class="text-base font-bold text-slate-800 dark:text-slate-200">0%</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-primary/10">
+          <div class="flex items-center gap-1">
+            <button class="p-2 text-slate-300 cursor-not-allowed" title="尚未發布" disabled>
+              <span class="material-symbols-outlined text-xl">play_circle</span>
+            </button>
+            <a href="/editor/image-click" class="p-2 text-slate-400 hover:text-primary transition-colors">
+              <span class="material-symbols-outlined text-xl">edit</span>
+            </a>
+            <button class="p-2 text-slate-400 hover:text-primary transition-colors">
+              <span class="material-symbols-outlined text-xl">content_copy</span>
+            </button>
+          </div>
+          <button class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+            <span class="material-symbols-outlined text-xl">delete</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add New -->
+    <a href="/editor" class="flex flex-col items-center justify-center min-h-[320px] border-2 border-dashed border-slate-300 dark:border-primary/20 rounded-xl hover:border-primary hover:bg-primary/5 transition-all text-slate-400 hover:text-primary group">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-primary/10 group-hover:bg-primary/20 mb-4 transition-colors">
+        <span class="material-symbols-outlined text-3xl">add</span>
+      </div>
+      <span class="font-bold">新增執行樹</span>
+      <span class="text-sm px-8 text-center mt-2 opacity-60">從範本開始或建立自訂自動化樹</span>
+    </a>
+  </div>
+
+  <!-- List View (hidden by default) -->
+  <div id="view-list" class="hidden flex-col gap-3">
+    <div class="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700">
+          <tr>
+            <th class="text-left px-5 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">名稱</th>
+            <th class="text-left px-5 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">狀態</th>
+            <th class="text-left px-5 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">步驟</th>
+            <th class="text-left px-5 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">成功率</th>
+            <th class="text-right px-5 py-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">操作</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-zinc-700">
+          <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
+            <td class="px-5 py-4 font-semibold text-slate-900 dark:text-slate-100">Notepad 自動化</td>
+            <td class="px-5 py-4"><span class="px-2 py-0.5 rounded bg-green-100 text-green-700 text-[10px] font-bold uppercase">執行中</span></td>
+            <td class="px-5 py-4 text-slate-600 dark:text-slate-400">4</td>
+            <td class="px-5 py-4 font-bold text-green-600">95%</td>
+            <td class="px-5 py-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button onclick="runTree('notepad')" class="text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">play_circle</span></button>
+                <a href="/editor/notepad" class="text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">edit</span></a>
+              </div>
+            </td>
+          </tr>
+          <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
+            <td class="px-5 py-4 font-semibold text-slate-900 dark:text-slate-100">圖片點擊流程</td>
+            <td class="px-5 py-4"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold uppercase">草稿</span></td>
+            <td class="px-5 py-4 text-slate-600 dark:text-slate-400">2</td>
+            <td class="px-5 py-4 text-slate-400">未執行</td>
+            <td class="px-5 py-4 text-right">
+              <a href="/editor/image-click" class="text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">edit</span></a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-12 border-t border-slate-200 dark:border-primary/20 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="flex items-center gap-4 text-xs font-semibold uppercase tracking-widest text-slate-400">
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>系統狀態：正常</span>
+    </div>
+    <p class="text-slate-400 text-xs">© 2025 Open2work · AI 桌面代理 POC</p>
+  </footer>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  function setView(v) {
+    const grid = document.getElementById('view-grid');
+    const list = document.getElementById('view-list');
+    const btnGrid = document.getElementById('btn-grid');
+    const btnList = document.getElementById('btn-list');
+    if (v === 'grid') {
+      grid.classList.remove('hidden'); grid.classList.add('grid');
+      list.classList.remove('flex'); list.classList.add('hidden');
+      btnGrid.classList.add('bg-white', 'dark:bg-primary', 'shadow-sm', 'text-slate-900', 'dark:text-white');
+      btnGrid.classList.remove('text-slate-500');
+      btnList.classList.remove('bg-white', 'dark:bg-primary', 'shadow-sm');
+      btnList.classList.add('text-slate-500');
+    } else {
+      grid.classList.add('hidden'); grid.classList.remove('grid');
+      list.classList.remove('hidden'); list.classList.add('flex');
+      btnList.classList.add('bg-white', 'dark:bg-primary', 'shadow-sm', 'text-slate-900', 'dark:text-white');
+      btnList.classList.remove('text-slate-500');
+      btnGrid.classList.remove('bg-white', 'dark:bg-primary', 'shadow-sm');
+      btnGrid.classList.add('text-slate-500');
+    }
+  }
+
+  async function runTree(id) {
+    const cmds = { 'notepad': 'open notepad type hello and save to desktop' };
+    const input = cmds[id] || id;
+    try {
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_input: input })
+      });
+      const data = await res.json();
+      showToast(data.ok ? '執行成功！' : '失敗：' + data.error, data.ok ? 'success' : 'error');
+    } catch(e) {
+      showToast('無法連接伺服器', 'error');
+    }
+  }
+</script>
+{% endblock %}

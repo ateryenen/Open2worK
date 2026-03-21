@@ -1,0 +1,846 @@
+{% extends "base.html" %}
+{% block title %}SOP 編排器 - Open2work{% endblock %}
+
+{% block extra_style %}
+.canvas-grid {
+  background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.dark .canvas-grid {
+  background-image: radial-gradient(circle, #475569 1px, transparent 1px);
+}
+/* Override base layout for full height editor */
+section.flex-1 { overflow: hidden !important; }
+{% endblock %}
+
+{% block content %}
+<!-- Editor top bar -->
+<div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 px-5 py-2.5 z-20">
+  <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm">
+      <span class="material-symbols-outlined text-slate-400 text-sm">folder_open</span>
+      <span class="font-semibold text-slate-700 dark:text-slate-200" id="tree-name">{{ tree_id if tree_id != 'new' else '未命名流程' }}</span>
+      <span class="material-symbols-outlined text-slate-400 text-sm">expand_more</span>
+    </div>
+    <span class="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-bold uppercase">草稿</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <button onclick="fetchUiTree()" title="即時擷取目前前景視窗 UI Tree，顯示於底部日誌（快速預覽）" class="flex items-center gap-1.5 h-9 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-semibold hover:border-teal-400/70 transition-colors">
+      <span class="material-symbols-outlined text-sm text-teal-500">account_tree</span>即時擷取
+    </button>
+    <button onclick="fetchUiTreeByRoi()" title="先切換到目標視窗，再框選區域擷取可操作 UI 候選" class="flex items-center gap-1.5 h-9 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-semibold hover:border-cyan-400/70 transition-colors">
+      <span class="material-symbols-outlined text-sm text-cyan-500">crop</span>框選擷取
+    </button>
+    <button onclick="captureTemplateImageByRoi()" title="先切換到目標視窗，再框選區域擷取模板圖片" class="flex items-center gap-1.5 h-9 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-semibold hover:border-primary/70 transition-colors">
+      <span class="material-symbols-outlined text-sm text-primary">photo_camera</span>擷取圖片
+    </button>
+    <button onclick="previewPlan()" class="flex items-center gap-1.5 h-9 px-4 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-semibold hover:border-primary/50 transition-colors">
+      <span class="material-symbols-outlined text-sm">preview</span>流程測試
+    </button>
+    <button onclick="deployFlow()" class="flex items-center gap-1.5 h-9 px-5 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity">
+      <span class="material-symbols-outlined text-sm">rocket_launch</span>佈署流程
+    </button>
+  </div>
+</div>
+
+<div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 57px - 57px);">
+  <!-- Step Library (Left Panel) -->
+  <aside class="w-60 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex flex-col z-10 shrink-0">
+    <div class="p-4 border-b border-slate-100 dark:border-slate-800">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-0.5">步驟庫</h3>
+      <p class="text-xs text-slate-500">點擊步驟加入流程</p>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-5">
+      <div>
+        <h4 class="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3">核心組件</h4>
+        <div class="space-y-2">
+          <button onclick="addStep('open_app')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-amber-500 group-hover:scale-110 transition-transform">description</span>
+            <span class="text-sm font-medium">開啟應用</span>
+          </button>
+          <button onclick="addStep('type_text')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-blue-500 group-hover:scale-110 transition-transform">keyboard</span>
+            <span class="text-sm font-medium">輸入文字</span>
+          </button>
+          <button onclick="addStep('key_press')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-cyan-500 group-hover:scale-110 transition-transform">keyboard_command_key</span>
+            <span class="text-sm font-medium">鍵盤按鍵</span>
+          </button>
+          <button onclick="addStep('click_image')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">ads_click</span>
+            <span class="text-sm font-medium">圖片點擊</span>
+          </button>
+          <button onclick="addStep('move_mouse_horizontal')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-indigo-500 group-hover:scale-110 transition-transform">swap_horiz</span>
+            <span class="text-sm font-medium">滑鼠左右移動</span>
+          </button>
+          <button onclick="addStep('mouse_click')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-rose-500 group-hover:scale-110 transition-transform">mouse</span>
+            <span class="text-sm font-medium">滑鼠點擊</span>
+          </button>
+          <button onclick="addStep('save_file')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-emerald-500 group-hover:scale-110 transition-transform">save</span>
+            <span class="text-sm font-medium">儲存檔案</span>
+          </button>
+          <button onclick="addStep('wait')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-purple-500 group-hover:scale-110 transition-transform">timer</span>
+            <span class="text-sm font-medium">等待</span>
+          </button>
+          <button onclick="addStep('capture_ui_tree')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group transition-all text-left">
+            <span class="material-symbols-outlined text-teal-500 group-hover:scale-110 transition-transform">account_tree</span>
+            <span class="text-sm font-medium">截取 UI Tree</span>
+          </button>
+        </div>
+      </div>
+      <div>
+        <h4 class="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3">快速模板</h4>
+        <div class="space-y-2">
+          <button onclick="loadTemplate('notepad')" class="w-full flex items-center gap-3 p-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary/50 transition-colors group text-left">
+            <span class="material-symbols-outlined text-slate-400 group-hover:text-primary">note_add</span>
+            <span class="text-sm font-medium text-slate-500 group-hover:text-primary">Notepad POC</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20">
+      <div class="flex items-center gap-2">
+        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+        <span class="text-[10px] font-bold text-slate-500 uppercase">系統就緒</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Canvas -->
+  <main class="flex-1 relative overflow-auto canvas-grid bg-background-light dark:bg-slate-900">
+    <!-- Canvas toolbar -->
+    <div class="absolute top-4 left-4 flex gap-2 z-10">
+      <div class="flex bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm p-1">
+        <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400" title="縮小">
+          <span class="material-symbols-outlined text-lg">zoom_out</span>
+        </button>
+        <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400" title="放大">
+          <span class="material-symbols-outlined text-lg">zoom_in</span>
+        </button>
+        <div class="w-px h-4 bg-slate-200 dark:bg-slate-800 my-auto mx-1"></div>
+        <button onclick="clearCanvas()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-600 dark:text-slate-400" title="清除">
+          <span class="material-symbols-outlined text-lg">clear_all</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Flow nodes -->
+    <div id="canvas-nodes" class="absolute inset-0 flex flex-col items-center pt-12 pb-8 gap-0 overflow-y-auto">
+      <!-- Start node always shown -->
+      <div class="flex flex-col items-center">
+        <div class="bg-emerald-500 text-white p-3 rounded-full shadow-lg z-10 relative">
+          <span class="material-symbols-outlined">start</span>
+        </div>
+        <div class="h-8 w-0.5 bg-slate-300 dark:bg-slate-700"></div>
+      </div>
+
+      <!-- Dynamic steps injected here -->
+      <div id="step-nodes" class="flex flex-col items-center gap-0"></div>
+
+      <!-- End node / empty hint -->
+      <div id="empty-hint" class="flex flex-col items-center gap-4 mt-4">
+        <div class="text-center text-slate-400">
+          <span class="material-symbols-outlined text-4xl mb-2 block">add_circle</span>
+          <p class="text-sm font-semibold">從左側步驟庫新增步驟</p>
+          <p class="text-xs mt-1 opacity-70">或點選下方範本快速建立流程</p>
+        </div>
+        <button onclick="loadTemplate('notepad')" class="flex items-center gap-2 h-9 px-4 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:border-primary/50 hover:text-primary transition-colors shadow-sm">
+          <span class="material-symbols-outlined text-sm">auto_fix_high</span>載入 Notepad 範本
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right Drawer: Node Settings -->
+  <aside id="right-drawer" class="w-72 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex flex-col z-20 overflow-y-auto shrink-0 hidden">
+    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">節點設定</h3>
+        <p class="text-[10px] font-medium text-primary uppercase tracking-tight" id="drawer-subtitle">選取節點</p>
+      </div>
+      <button onclick="closeDrawer()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="drawer-content" class="p-5 space-y-5 text-sm"></div>
+  </aside>
+</div>
+
+<!-- Execution log panel -->
+<div id="log-panel" class="hidden fixed bottom-0 left-64 right-0 bg-white dark:bg-zinc-900 border-t border-slate-200 dark:border-zinc-700 shadow-lg z-40 flex flex-col" style="height:240px; min-height:140px; max-height:70vh;">
+  <div id="log-resize-handle" class="h-2 cursor-ns-resize bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700"></div>
+  <div class="flex items-center justify-between px-4 py-2 border-b border-slate-100 dark:border-zinc-800">
+    <span id="log-panel-title" class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">執行日誌</span>
+    <button onclick="document.getElementById('log-panel').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+      <span class="material-symbols-outlined text-sm">close</span>
+    </button>
+  </div>
+  <div id="log-content" class="p-3 font-mono text-xs text-slate-600 dark:text-slate-400 overflow-y-auto flex-1 min-h-0"></div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+const STEP_ICONS = {
+  open_app: ['description','text-amber-500','開啟應用'],
+  type_text: ['keyboard','text-blue-500','輸入文字'],
+  key_press: ['keyboard_command_key','text-cyan-500','鍵盤按鍵'],
+  click_image: ['ads_click','text-primary','圖片點擊'],
+  move_mouse_horizontal: ['swap_horiz','text-indigo-500','滑鼠左右移動'],
+  mouse_click: ['mouse','text-rose-500','滑鼠點擊'],
+  save_file: ['save','text-emerald-500','儲存檔案'],
+  wait: ['timer','text-purple-500','等待'],
+  capture_ui_tree: ['account_tree','text-teal-500','截取 UI Tree'],
+};
+
+let steps = [];
+let selectedIdx = -1;
+let templateImages = [];
+
+function renderNodes() {
+  const container = document.getElementById('step-nodes');
+  const hint = document.getElementById('empty-hint');
+  container.innerHTML = '';
+  if (steps.length === 0) { hint.classList.remove('hidden'); return; }
+  hint.classList.add('hidden');
+  steps.forEach((step, i) => {
+    const [icon, color, label] = STEP_ICONS[step.action] || ['help','text-slate-400', step.action];
+    const isSelected = i === selectedIdx;
+    const imagePreview = step.action === 'click_image' && step.template_path
+      ? `<div class="mt-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-1">
+          <img src="${templatePreviewUrl(step.template_path)}" alt="template" class="w-full h-20 object-contain rounded" onerror="this.parentElement.remove()"/>
+        </div>`
+      : '';
+    const div = document.createElement('div');
+    div.className = 'flex flex-col items-center';
+    div.innerHTML = `
+      <div onclick="selectStep(${i})" class="w-52 bg-white dark:bg-background-dark border-2 ${isSelected ? 'border-primary ring-4 ring-primary/10' : 'border-slate-200 dark:border-slate-800'} rounded-xl shadow-md p-3 cursor-pointer hover:border-primary/60 transition-all">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="material-symbols-outlined ${color} text-sm">${icon}</span>
+          <span class="text-[10px] font-bold uppercase text-slate-400">${label}</span>
+          <button onclick="event.stopPropagation(); removeStep(${i})" class="ml-auto text-slate-300 hover:text-red-500 transition-colors">
+            <span class="material-symbols-outlined text-sm">close</span>
+          </button>
+        </div>
+        <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">${stepSummary(step)}</p>
+        ${imagePreview}
+      </div>
+      <div class="h-6 w-0.5 bg-slate-300 dark:bg-slate-700"></div>`;
+    container.appendChild(div);
+  });
+  // End node
+  const end = document.createElement('div');
+  end.className = 'bg-slate-400 dark:bg-slate-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow mt-2';
+  end.textContent = '結束';
+  container.appendChild(end);
+}
+
+function stepSummary(step) {
+  if (step.action === 'open_app') return step.target || '—';
+  if (step.action === 'type_text') return (step.text || '—').substring(0, 30);
+  if (step.action === 'key_press') return `${step.key || 'enter'} x${step.repeat ?? 1}`;
+  if (step.action === 'save_file') return step.path || '—';
+  if (step.action === 'wait') return `等待 ${step.seconds ?? 1}s`;
+  if (step.action === 'click_image') return step.template_path || '圖片模板';
+  if (step.action === 'move_mouse_horizontal') return `${step.direction === 'left' ? '向左' : '向右'} ${step.pixels ?? 100}px`;
+  if (step.action === 'mouse_click') return `${step.button === 'right' ? '右鍵' : '左鍵'} x${step.click_count ?? 1} [${step.click_mode === 'send_input' ? 'SI' : 'ME'}]`;
+  if (step.action === 'capture_ui_tree') return step.target_app || '自動偵測';
+  return step.action;
+}
+
+function addStep(action) {
+  const defaults = {
+    open_app: { action: 'open_app', target: 'notepad' },
+    type_text: { action: 'type_text', text: '你好，世界！' },
+    key_press: { action: 'key_press', key: 'enter', repeat: 1, interval: 0.05 },
+    click_image: { action: 'click_image', template_path: '', confidence: 0.8, timeout_seconds: 8, click_count: 1, press_duration: 0.03, click_mode: 'mouse_event' },
+    move_mouse_horizontal: { action: 'move_mouse_horizontal', direction: 'right', pixels: 120, duration: 0.2 },
+    mouse_click: { action: 'mouse_click', button: 'left', click_count: 1, interval: 0.1, press_duration: 0.03, click_mode: 'mouse_event' },
+    save_file: { action: 'save_file', path: 'C:\\Users\\%USERNAME%\\Desktop\\output.txt' },
+    wait: { action: 'wait', seconds: 1 },
+    capture_ui_tree: { action: 'capture_ui_tree', target_app: 'notepad', save_to_log: true },
+  };
+  steps.push({ ...defaults[action] });
+  selectedIdx = steps.length - 1;
+  renderNodes();
+  openDrawer(selectedIdx);
+}
+
+function removeStep(i) {
+  steps.splice(i, 1);
+  if (selectedIdx >= steps.length) selectedIdx = steps.length - 1;
+  renderNodes();
+  if (steps.length === 0) closeDrawer();
+}
+
+function selectStep(i) {
+  selectedIdx = i;
+  renderNodes();
+  openDrawer(i);
+}
+
+function openDrawer(i) {
+  const step = steps[i];
+  const [,, label] = STEP_ICONS[step.action] || ['','', step.action];
+  document.getElementById('drawer-subtitle').textContent = `步驟 ${i+1}：${label}`;
+  const content = document.getElementById('drawer-content');
+  content.innerHTML = buildDrawerForm(step, i);
+  document.getElementById('right-drawer').classList.remove('hidden');
+}
+
+function buildDrawerForm(step, i) {
+  let html = `<div class="space-y-4">`;
+  if (step.action === 'open_app') {
+    html += field('目標應用', `<input class="drawer-input" value="${escHtml(step.target)}" onchange="updateStep(${i},'target',this.value)"/>`);
+  } else if (step.action === 'type_text') {
+    html += field('輸入文字', `<textarea class="drawer-input" rows="3" onchange="updateStep(${i},'text',this.value)">${escHtml(step.text)}</textarea>`);
+  } else if (step.action === 'key_press') {
+    html += field('按鍵', `<input class="drawer-input" value="${escHtml(step.key ?? 'enter')}" onchange="updateStep(${i},'key',this.value)" placeholder="例如：enter、tab、esc、ctrl+s"/>`);
+    html += field('重複次數', `<input class="drawer-input" type="number" min="1" max="50" step="1" value="${step.repeat ?? 1}" onchange="updateStep(${i},'repeat',parseInt(this.value))"/>`);
+    html += field('間隔秒數', `<input class="drawer-input" type="number" min="0" max="2" step="0.05" value="${step.interval ?? 0.05}" onchange="updateStep(${i},'interval',parseFloat(this.value))"/>`);
+  } else if (step.action === 'save_file') {
+    html += field('儲存路徑', `<input class="drawer-input" value="${escHtml(step.path)}" onchange="updateStep(${i},'path',this.value)"/>`);
+  } else if (step.action === 'wait') {
+    html += field('等待秒數', `<input class="drawer-input" type="number" min="0.1" step="0.1" value="${step.seconds}" onchange="updateStep(${i},'seconds',parseFloat(this.value))"/>`);
+  } else if (step.action === 'click_image') {
+    html += field('模板圖片路徑', `
+      <div class="space-y-2">
+        <div class="flex gap-2">
+          <select class="drawer-input" onchange="onTemplateImageSelect(${i},this.value)">
+            ${buildTemplateImageOptions(step.template_path)}
+          </select>
+          <button type="button" onclick="refreshTemplateImages()" class="px-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-primary/60">
+            <span class="material-symbols-outlined text-sm">refresh</span>
+          </button>
+        </div>
+        ${step.template_path ? `<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2"><img src="${templatePreviewUrl(step.template_path)}" alt="template" class="w-full h-28 object-contain rounded"/></div>` : `<div class="text-xs text-slate-400">尚未選擇模板圖片</div>`}
+      </div>`);
+    html += field('信心指數', `<input class="drawer-input" type="number" min="0.1" max="1" step="0.05" value="${step.confidence}" onchange="updateStep(${i},'confidence',parseFloat(this.value))"/>`);
+    html += field('點擊次數', `<input class="drawer-input" type="number" min="1" max="10" value="${step.click_count}" onchange="updateStep(${i},'click_count',parseInt(this.value))"/>`);
+    html += field('按下時間(秒)', `<input class="drawer-input" type="number" min="0" max="2" step="0.01" value="${step.press_duration ?? 0.03}" onchange="updateStep(${i},'press_duration',parseFloat(this.value))"/>`);
+    html += field('超時秒數', `<input class="drawer-input" type="number" min="1" value="${step.timeout_seconds}" onchange="updateStep(${i},'timeout_seconds',parseFloat(this.value))"/>`);
+    html += field('點擊模式', `<select class="drawer-input" onchange="updateStep(${i},'click_mode',this.value)">
+      <option value="mouse_event" ${(step.click_mode??'mouse_event')==='mouse_event'?'selected':''}>mouse_event（舊版）</option>
+      <option value="send_input" ${step.click_mode==='send_input'?'selected':''}>send_input（新版，適合管理員視窗）</option>
+    </select>`);
+  } else if (step.action === 'move_mouse_horizontal') {
+    html += field('移動方向', `<select class="drawer-input" onchange="updateStep(${i},'direction',this.value)">
+      <option value="right" ${step.direction==='right'?'selected':''}>向右</option>
+      <option value="left" ${step.direction==='left'?'selected':''}>向左</option>
+    </select>`);
+    html += field('移動像素', `<input class="drawer-input" type="number" min="1" max="5000" step="1" value="${step.pixels ?? 120}" onchange="updateStep(${i},'pixels',parseInt(this.value))"/>`);
+    html += field('移動時間(秒)', `<input class="drawer-input" type="number" min="0" max="10" step="0.05" value="${step.duration ?? 0.2}" onchange="updateStep(${i},'duration',parseFloat(this.value))"/>`);
+  } else if (step.action === 'mouse_click') {
+    html += field('按鍵', `<select class="drawer-input" onchange="updateStep(${i},'button',this.value)">
+      <option value="left" ${step.button==='left'?'selected':''}>左鍵</option>
+      <option value="right" ${step.button==='right'?'selected':''}>右鍵</option>
+    </select>`);
+    html += field('點擊次數', `<input class="drawer-input" type="number" min="1" max="10" value="${step.click_count ?? 1}" onchange="updateStep(${i},'click_count',parseInt(this.value))"/>`);
+    html += field('按下時間(秒)', `<input class="drawer-input" type="number" min="0" max="2" step="0.01" value="${step.press_duration ?? 0.03}" onchange="updateStep(${i},'press_duration',parseFloat(this.value))"/>`);
+    html += field('間隔秒數', `<input class="drawer-input" type="number" min="0" max="2" step="0.05" value="${step.interval ?? 0.1}" onchange="updateStep(${i},'interval',parseFloat(this.value))"/>`);
+    html += field('點擊模式', `<select class="drawer-input" onchange="updateStep(${i},'click_mode',this.value)">
+      <option value="mouse_event" ${(step.click_mode??'mouse_event')==='mouse_event'?'selected':''}>mouse_event（舊版）</option>
+      <option value="send_input" ${step.click_mode==='send_input'?'selected':''}>send_input（新版，適合管理員視窗）</option>
+    </select>`);
+  } else if (step.action === 'capture_ui_tree') {
+    html += field('目標應用', `<select class="drawer-input" onchange="updateStep(${i},'target_app',this.value)">
+      <option value="notepad" ${step.target_app==='notepad'?'selected':''}>Notepad</option>
+      <option value="auto" ${step.target_app==='auto'?'selected':''}>自動偵測前景視窗</option>
+    </select>`);
+    html += field('即時預覽結果', `<label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" ${step.save_to_log?'checked':''} onchange="updateStep(${i},'save_to_log',this.checked)" class="w-4 h-4 accent-teal-500"/>
+      <span class="text-xs text-slate-500">執行時顯示於底部日誌面板</span>
+    </label>`);
+    html += `<button onclick="runCaptureStep(${i})" class="w-full flex items-center justify-center gap-2 py-2.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800 rounded-xl text-sm font-bold hover:bg-teal-100 transition-colors">
+      <span class="material-symbols-outlined text-sm">play_arrow</span>立即試跑</button>`;
+  }
+  html += `<button onclick="removeStep(${i})" class="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 dark:bg-slate-800 text-red-500 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors mt-4">
+    <span class="material-symbols-outlined text-sm">delete</span>刪除節點</button>`;
+  html += `</div>`;
+  return html;
+}
+
+function field(label, inputHtml) {
+  return `<label class="block"><span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">${label}</span>${inputHtml}</label>`;
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function templatePreviewUrl(path) {
+  return `/api/template-image?path=${encodeURIComponent(path || '')}`;
+}
+
+function buildTemplateImageOptions(selectedPath) {
+  const normalized = String(selectedPath || '');
+  let html = `<option value="">請選擇模板圖片</option>`;
+  for (const img of templateImages) {
+    const path = String(img.path || '');
+    const selected = path === normalized ? 'selected' : '';
+    html += `<option value="${escHtml(path)}" ${selected}>${escHtml(path)}</option>`;
+  }
+  if (normalized && !templateImages.some(img => String(img.path || '') === normalized)) {
+    html += `<option value="${escHtml(normalized)}" selected>${escHtml(normalized)}（目前值）</option>`;
+  }
+  return html;
+}
+
+function onTemplateImageSelect(i, value) {
+  updateStep(i, 'template_path', value);
+  renderNodes();
+  openDrawer(i);
+}
+
+async function refreshTemplateImages(preferredPath = '') {
+  try {
+    const res = await fetch('/api/template-images');
+    const data = await res.json();
+    if (!data.ok) {
+      showToast('讀取模板圖片失敗', 'error');
+      return;
+    }
+    templateImages = Array.isArray(data.images) ? data.images : [];
+    if (preferredPath && selectedIdx >= 0 && steps[selectedIdx] && steps[selectedIdx].action === 'click_image') {
+      steps[selectedIdx].template_path = preferredPath;
+      renderNodes();
+      openDrawer(selectedIdx);
+    } else if (selectedIdx >= 0 && steps[selectedIdx] && steps[selectedIdx].action === 'click_image') {
+      openDrawer(selectedIdx);
+    }
+  } catch (_e) {
+    showToast('讀取模板圖片失敗', 'error');
+  }
+}
+
+function updateStep(i, key, val) {
+  steps[i][key] = val;
+}
+
+function closeDrawer() {
+  document.getElementById('right-drawer').classList.add('hidden');
+}
+
+function clearCanvas() {
+  steps = [];
+  selectedIdx = -1;
+  closeDrawer();
+  renderNodes();
+}
+
+function loadTemplate(tpl) {
+  if (tpl === 'notepad') {
+    steps = [
+      { action: 'open_app', target: 'notepad' },
+      { action: 'type_text', text: 'Hello Open2work!' },
+      { action: 'save_file', path: 'C:\\Users\\%USERNAME%\\Desktop\\test.txt' },
+    ];
+    document.getElementById('tree-name').textContent = 'Notepad POC';
+  }
+  selectedIdx = -1;
+  closeDrawer();
+  renderNodes();
+  showToast('範本已載入');
+}
+
+async function previewPlan() {
+  if (steps.length === 0) { showToast('請先新增步驟', 'error'); return; }
+  const payload = buildDirectPayload();
+  if (!payload.ok) { showToast(payload.error || '流程包含不支援步驟', 'error'); return; }
+  startCaptureCountdown(async () => {
+  try {
+    const res = await fetch('/api/run-direct', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ goal: `[流程測試] ${getFlowGoal()}`, steps: payload.steps })
+    });
+    const data = await res.json();
+    const log = document.getElementById('log-panel');
+    const lt = document.getElementById('log-panel-title');
+    const lc = document.getElementById('log-content');
+    lt.textContent = '流程測試日誌';
+    log.classList.remove('hidden');
+    if (data.ok) {
+      lc.textContent = '流程測試執行成功！\n' + JSON.stringify(data.plan, null, 2);
+      showToast('流程測試成功！', 'success');
+    } else {
+      const errMsg = String(data.error || '未知錯誤');
+      lc.textContent = '=== 流程測試錯誤 ===\n' + errMsg + '\n\n=== 計劃 ===\n' + JSON.stringify(data.plan || null, null, 2);
+      lc.scrollTop = 0;
+      showToast('流程測試失敗：' + errMsg.split('\n')[0].slice(0, 80), 'error');
+    }
+  } catch(e) {
+    showToast('無法連接伺服器：' + String(e), 'error');
+  }
+  }, {
+    title: '請切換到目標視窗',
+    subtitle: '倒數結束後將開始執行流程測試（會實際操作滑鼠）',
+    buttonLabel: '已切換—立即開始測試',
+  });
+}
+
+async function deployFlow() {
+  if (steps.length === 0) { showToast('請先新增步驟', 'error'); return; }
+  const payload = buildDirectPayload();
+  if (!payload.ok) { showToast(payload.error || '流程包含不支援步驟', 'error'); return; }
+  startCaptureCountdown(async () => {
+  try {
+    const res = await fetch('/api/run-direct', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ goal: getFlowGoal(), steps: payload.steps })
+    });
+    const data = await res.json();
+    const log = document.getElementById('log-panel');
+    const lt = document.getElementById('log-panel-title');
+    const lc = document.getElementById('log-content');
+    lt.textContent = '執行日誌';
+    log.classList.remove('hidden');
+    if (data.ok) {
+      lc.textContent = '執行成功！\n' + JSON.stringify(data.plan, null, 2);
+      showToast('佈署成功！', 'success');
+    } else {
+      const errMsg = String(data.error || '未知錯誤');
+      lc.textContent = '=== 執行錯誤 ===\n' + errMsg + '\n\n=== 計劃 ===\n' + JSON.stringify(data.plan || null, null, 2);
+      lc.scrollTop = 0;
+      showToast('執行失敗：' + errMsg.split('\n')[0].slice(0, 80), 'error');
+    }
+  } catch(e) {
+    showToast('無法連接伺服器：' + String(e), 'error');
+  }
+  }, {
+    title: '請切換到目標視窗',
+    subtitle: '倒數結束後將開始佈署流程（會實際操作滑鼠）',
+    buttonLabel: '已切換—立即開始佈署',
+  });
+}
+
+function getFlowGoal() {
+  const treeName = document.getElementById('tree-name');
+  const value = treeName && treeName.textContent ? String(treeName.textContent).trim() : '';
+  return value || 'UI editor flow';
+}
+
+function buildDirectPayload() {
+  const supportedActions = new Set(['open_app', 'wait', 'type_text', 'key_press', 'save_file', 'click_image', 'move_mouse_horizontal', 'mouse_click']);
+  const unsupported = steps.filter(s => !supportedActions.has(String(s.action || ''))).map(s => s.action);
+  if (unsupported.length) {
+    return {
+      ok: false,
+      error: `目前不支援的步驟：${unsupported.join('、')}（可先移除後再測試/佈署）`,
+      steps: [],
+    };
+  }
+
+  const normalized = steps.map(s => {
+    if (s.action === 'open_app') {
+      return { action: 'open_app', target: String(s.target || 'notepad') };
+    }
+    if (s.action === 'wait') {
+      const seconds = Number.isFinite(Number(s.seconds)) ? Number(s.seconds) : 1;
+      return { action: 'wait', seconds: Math.max(0.1, seconds) };
+    }
+    if (s.action === 'type_text') {
+      return { action: 'type_text', text: String(s.text || '') };
+    }
+    if (s.action === 'key_press') {
+      const repeat = Number.isFinite(Number(s.repeat)) ? Number(s.repeat) : 1;
+      const interval = Number.isFinite(Number(s.interval)) ? Number(s.interval) : 0.05;
+      return {
+        action: 'key_press',
+        key: String(s.key || 'enter').trim(),
+        repeat: Math.max(1, Math.min(50, Math.round(repeat))),
+        interval: Math.max(0, Math.min(2, interval)),
+      };
+    }
+    if (s.action === 'save_file') {
+      return { action: 'save_file', path: String(s.path || '') };
+    }
+    if (s.action === 'move_mouse_horizontal') {
+      const direction = String(s.direction || 'right') === 'left' ? 'left' : 'right';
+      const pixels = Number.isFinite(Number(s.pixels)) ? Number(s.pixels) : 120;
+      const duration = Number.isFinite(Number(s.duration)) ? Number(s.duration) : 0.2;
+      return {
+        action: 'move_mouse_horizontal',
+        direction,
+        pixels: Math.max(1, Math.round(pixels)),
+        duration: Math.max(0, duration),
+      };
+    }
+    if (s.action === 'mouse_click') {
+      const button = String(s.button || 'left') === 'right' ? 'right' : 'left';
+      const clickCount = Number.isFinite(Number(s.click_count)) ? Number(s.click_count) : 1;
+      const interval = Number.isFinite(Number(s.interval)) ? Number(s.interval) : 0.1;
+      const pressDuration = Number.isFinite(Number(s.press_duration)) ? Number(s.press_duration) : 0.03;
+      return {
+        action: 'mouse_click',
+        button,
+        click_count: Math.max(1, Math.round(clickCount)),
+        interval: Math.max(0, interval),
+        press_duration: Math.max(0, Math.min(2, pressDuration)),
+      };
+    }
+    const confidence = Number.isFinite(Number(s.confidence)) ? Number(s.confidence) : 0.8;
+    const timeoutSeconds = Number.isFinite(Number(s.timeout_seconds)) ? Number(s.timeout_seconds) : 8;
+    const clickCount = Number.isFinite(Number(s.click_count)) ? Number(s.click_count) : 1;
+    const pressDuration = Number.isFinite(Number(s.press_duration)) ? Number(s.press_duration) : 0.03;
+    return {
+      action: 'click_image',
+      template_path: String(s.template_path || ''),
+      confidence: Math.min(1, Math.max(0.1, confidence)),
+      timeout_seconds: Math.max(1, timeoutSeconds),
+      click_count: Math.max(1, Math.round(clickCount)),
+      press_duration: Math.max(0, Math.min(2, pressDuration)),
+    };
+  });
+
+  return { ok: true, steps: normalized };
+}
+
+function formatUiTree(tree) {
+  if (!tree || !tree.name) return '無可用 UI Tree';
+  const lines = [tree.name];
+  const children = Array.isArray(tree.children) ? tree.children : [];
+
+  function walk(node, prefix, isLast) {
+    const branch = isLast ? '└─ ' : '├─ ';
+    lines.push(prefix + branch + (node.name || 'Unknown'));
+    const kids = Array.isArray(node.children) ? node.children : [];
+    const nextPrefix = prefix + (isLast ? '   ' : '│  ');
+    kids.forEach((child, idx) => walk(child, nextPrefix, idx === kids.length - 1));
+  }
+
+  children.forEach((child, idx) => walk(child, '', idx === children.length - 1));
+  return lines.join('\n');
+}
+
+// ---- Capture countdown state ----
+let _captureTimer = null;
+let _captureCallback = null;
+
+function startCaptureCountdown(onCapture, options = {}) {
+  _captureCallback = onCapture;
+  const overlay = document.getElementById('capture-overlay');
+  const countEl = document.getElementById('capture-countdown');
+  const titleEl = document.getElementById('capture-title');
+  const subtitleEl = document.getElementById('capture-subtitle');
+  const actionEl = document.getElementById('capture-action-label');
+  if (titleEl) titleEl.textContent = String(options.title || '請切換到目標視窗');
+  if (subtitleEl) subtitleEl.textContent = String(options.subtitle || '倒計時結束後自動擷取前景視窗 UI Tree');
+  if (actionEl) actionEl.textContent = String(options.buttonLabel || '已切換—立即擷取');
+  overlay.style.display = 'flex';
+  let count = 5;
+  countEl.textContent = count;
+  _captureTimer = setInterval(() => {
+    count--;
+    countEl.textContent = count;
+    if (count <= 0) {
+      clearInterval(_captureTimer);
+      _captureTimer = null;
+      overlay.style.display = 'none';
+      _captureCallback && _captureCallback();
+    }
+  }, 1000);
+}
+
+function fireCaptureNow() {
+  if (_captureTimer) { clearInterval(_captureTimer); _captureTimer = null; }
+  document.getElementById('capture-overlay').style.display = 'none';
+  _captureCallback && _captureCallback();
+}
+
+function cancelCapture() {
+  if (_captureTimer) { clearInterval(_captureTimer); _captureTimer = null; }
+  document.getElementById('capture-overlay').style.display = 'none';
+  showToast('已取消擷取');
+}
+
+function formatCandidateSummary(data) {
+  const roi = data && data.roi ? data.roi : null;
+  const candidates = Array.isArray(data && data.candidates) ? data.candidates : [];
+  const hint = data && data.hint ? String(data.hint) : '';
+  if (!roi) return '';
+  const lines = [];
+  if (hint) {
+    lines.push('--- 系統提示 ---');
+    lines.push(hint);
+    lines.push('');
+  }
+  lines.push('--- ROI ---');
+  lines.push(`left=${roi.left}, top=${roi.top}, right=${roi.right}, bottom=${roi.bottom}`);
+  lines.push(`size=${roi.width}x${roi.height}`);
+  lines.push('');
+  lines.push(`--- 候選元素 (${candidates.length}) ---`);
+  candidates.slice(0, 15).forEach((item, idx) => {
+    const n = item.name || '(no-name)';
+    const ct = item.control_type || 'Unknown';
+    lines.push(`${idx + 1}. [${item.rank_score}] ${ct} | ${n}`);
+  });
+  return lines.join('\n');
+}
+
+async function doUiTreeCapture(panelTitle = 'UI Tree', mode = 'foreground') {
+  const log = document.getElementById('log-panel');
+  document.getElementById('log-panel-title').textContent = panelTitle;
+  log.classList.remove('hidden');
+  document.getElementById('log-content').textContent = '擷取中...';
+  try {
+    const res = await fetch(`/api/ui-tree?mode=${mode}`);
+    const data = await res.json();
+    if (!data.ok) {
+      document.getElementById('log-content').textContent = '錯誤：' + (data.error || '未知錯誤');
+      showToast('UI Tree 擷取失敗', 'error');
+      return;
+    }
+    const artifacts = Array.isArray(data.artifacts) && data.artifacts.length
+      ? '\n\n--- 檔案輸出 ---\n' + data.artifacts.join('\n')
+      : '';
+    const candidateSummary = mode === 'roi' ? ('\n\n' + formatCandidateSummary(data)) : '';
+    document.getElementById('log-content').textContent = formatUiTree(data.tree) + candidateSummary + '\n\n--- JSON ---\n' + JSON.stringify(data.tree, null, 2) + artifacts;
+    showToast('UI Tree 擷取成功');
+  } catch (e) {
+    document.getElementById('log-content').textContent = '錯誤：無法連接伺服器';
+    showToast('UI Tree 擷取失敗', 'error');
+  }
+}
+
+async function runCaptureStep(i) {
+  const step = steps[i];
+  startCaptureCountdown(async () => {
+    const res = await fetch('/api/ui-tree?mode=foreground');
+    const data = await res.json();
+    if (!data.ok) { showToast('UI Tree 擷取失敗', 'error'); return; }
+    if (step.save_to_log) {
+      document.getElementById('log-panel-title').textContent = `UI Tree — 步驟 ${i+1}`;
+      document.getElementById('log-panel').classList.remove('hidden');
+      const artifacts = Array.isArray(data.artifacts) && data.artifacts.length
+        ? '\n\n--- 檔案輸出 ---\n' + data.artifacts.join('\n')
+        : '';
+      document.getElementById('log-content').textContent = formatUiTree(data.tree) + '\n\n--- JSON ---\n' + JSON.stringify(data.tree, null, 2) + artifacts;
+    }
+    showToast('擷取成功');
+  });
+}
+
+function initLogPanelResize() {
+  const panel = document.getElementById('log-panel');
+  const handle = document.getElementById('log-resize-handle');
+  if (!panel || !handle) return;
+
+  let startY = 0;
+  let startHeight = 0;
+  let resizing = false;
+
+  handle.addEventListener('mousedown', (e) => {
+    resizing = true;
+    startY = e.clientY;
+    startHeight = panel.getBoundingClientRect().height;
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!resizing) return;
+    const delta = startY - e.clientY;
+    const minHeight = 140;
+    const maxHeight = Math.floor(window.innerHeight * 0.75);
+    const next = Math.max(minHeight, Math.min(maxHeight, startHeight + delta));
+    panel.style.height = `${next}px`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    resizing = false;
+  });
+}
+
+async function fetchUiTree() {
+  startCaptureCountdown(() => doUiTreeCapture('UI Tree'));
+}
+
+async function fetchUiTreeByRoi() {
+  startCaptureCountdown(() => doUiTreeCapture('UI Tree（框選）', 'roi'));
+}
+
+async function captureTemplateImageByRoi() {
+  startCaptureCountdown(() => doCaptureTemplateImageByRoi());
+}
+
+async function doCaptureTemplateImageByRoi() {
+  const log = document.getElementById('log-panel');
+  document.getElementById('log-panel-title').textContent = '模板圖片擷取';
+  log.classList.remove('hidden');
+  document.getElementById('log-content').textContent = '擷取中...';
+  try {
+    const res = await fetch('/api/capture-image-roi', { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) {
+      document.getElementById('log-content').textContent = '錯誤：' + (data.error || '未知錯誤');
+      showToast('擷取圖片失敗', 'error');
+      return;
+    }
+
+    document.getElementById('log-content').textContent = [
+      '模板圖片擷取成功',
+      `path=${data.path || ''}`,
+      data.roi ? `roi=(${data.roi.left},${data.roi.top})-(${data.roi.right},${data.roi.bottom})` : ''
+    ].filter(Boolean).join('\n');
+
+    let targetIdx = -1;
+    if (selectedIdx >= 0 && steps[selectedIdx] && steps[selectedIdx].action === 'click_image') {
+      targetIdx = selectedIdx;
+    } else {
+      targetIdx = steps.findIndex(s => s.action === 'click_image');
+    }
+
+    await refreshTemplateImages(String(data.path || ''));
+
+    if (targetIdx >= 0) {
+      steps[targetIdx].template_path = String(data.path || '');
+      selectedIdx = targetIdx;
+      renderNodes();
+      openDrawer(targetIdx);
+      showToast('圖片已擷取並套用到圖片點擊節點', 'success');
+    } else {
+      showToast('圖片已擷取，請新增圖片點擊節點後選擇', 'success');
+    }
+  } catch (_e) {
+    document.getElementById('log-content').textContent = '錯誤：無法連接伺服器';
+    showToast('擷取圖片失敗', 'error');
+  }
+}
+
+// Add Tailwind classes for drawer inputs via JS (simpler than custom CSS)
+document.addEventListener('DOMContentLoaded', () => {
+  // Inject capture overlay directly into <body> to escape section overflow:hidden
+  const _ov = document.createElement('div');
+  _ov.id = 'capture-overlay';
+  _ov.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.82);align-items:center;justify-content:center;';
+  _ov.innerHTML = `
+    <div style="background:#fff;border-radius:1rem;box-shadow:0 25px 60px rgba(0,0,0,0.5);padding:2rem;display:flex;flex-direction:column;align-items:center;gap:1rem;width:18rem;">
+      <div style="width:3rem;height:3rem;border-radius:9999px;background:#f0fdfa;display:flex;align-items:center;justify-content:center;">
+        <span class="material-symbols-outlined" style="color:#14b8a6;font-size:1.5rem;">account_tree</span>
+      </div>
+      <div style="text-align:center;">
+        <h3 id="capture-title" style="font-size:1rem;font-weight:700;margin:0 0 .25rem;color:#0f172a;">請切換到目標視窗</h3>
+        <p id="capture-subtitle" style="font-size:.75rem;color:#64748b;margin:0;">倒計時結束後自動擷取前景視窗 UI Tree</p>
+      </div>
+      <div id="capture-countdown" style="font-size:4.5rem;font-weight:900;color:#14b8a6;line-height:1;">5</div>
+      <button onclick="fireCaptureNow()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.65rem 0;background:#14b8a6;color:#fff;border:none;border-radius:.75rem;font-size:.875rem;font-weight:700;cursor:pointer;">
+        <span class="material-symbols-outlined" style="font-size:1rem;">play_arrow</span><span id="capture-action-label">已切換—立即擷取</span>
+      </button>
+      <button onclick="cancelCapture()" style="width:100%;padding:.5rem 0;background:none;border:none;color:#64748b;font-size:.875rem;cursor:pointer;">取消</button>
+    </div>`;
+  document.body.appendChild(_ov);
+
+  document.head.insertAdjacentHTML('beforeend', `<style>
+    .drawer-input { width:100%; background:#f1f5f9; border:none; border-radius:0.5rem; padding:0.4rem 0.6rem; font-size:0.875rem; }
+    .drawer-input:focus { outline:none; box-shadow:0 0 0 2px #ec5b1366; }
+    .dark .drawer-input { background:#27272a; color:#e2e8f0; }
+  </style>`);
+  refreshTemplateImages();
+  initLogPanelResize();
+  renderNodes();
+});
+</script>
+{% endblock %}

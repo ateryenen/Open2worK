@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}設定 - Open2work{% endblock %}
+
+{% block content %}
+<div class="px-6 py-6 lg:px-8 max-w-3xl">
+  <div class="mb-8">
+    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">設定</h1>
+    <p class="text-slate-500 dark:text-slate-400 mt-1">設定自動化引擎與 LLM 整合參數。</p>
+  </div>
+
+  <!-- Planner Settings -->
+  <section class="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-700 p-6 mb-6">
+    <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-5 flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">psychology</span>規劃器 (Planner)
+    </h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">規劃器類型</label>
+        <select class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5">
+          <option value="rule">規則式 (預設)</option>
+          <option value="llm">本地 LLM</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">LLM 端點 (Ollama)</label>
+        <input type="url" value="http://127.0.0.1:11434/api/generate"
+          class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5"/>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">LLM 模型</label>
+        <input type="text" value="qwen2.5:latest"
+          class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5"/>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">超時秒數</label>
+        <input type="number" value="90" min="10"
+          class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5"/>
+      </div>
+    </div>
+  </section>
+
+  <!-- Monitor Settings -->
+  <section class="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-700 p-6 mb-6">
+    <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-5 flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">monitor</span>螢幕監控 (Monitor)
+    </h2>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">啟用監控</p>
+          <p class="text-xs text-slate-500 mt-0.5">使用本地 LLM 監控執行畫面</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer"/>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+        </label>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">監控 LLM 模型</label>
+        <input type="text" value="phi:latest"
+          class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5"/>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">監控間隔 (秒)</label>
+        <input type="number" value="2" min="0.5" step="0.5"
+          class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5"/>
+      </div>
+    </div>
+  </section>
+
+  <!-- Executor Settings -->
+  <section class="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-zinc-700 p-6 mb-6">
+    <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-5 flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">settings_suggest</span>執行器 (Executor)
+    </h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">圖片點擊信心度預設值</label>
+        <input type="number" value="0.9" min="0.1" max="1" step="0.05"
+          class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5"/>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">圖片點擊超時 (秒)</label>
+        <input type="number" value="8" min="1"
+          class="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary p-2.5"/>
+      </div>
+    </div>
+  </section>
+
+  <div class="flex items-center gap-4">
+    <button onclick="saveSettings()" class="flex items-center gap-2 h-10 px-6 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
+      <span class="material-symbols-outlined text-sm">save</span>儲存設定
+    </button>
+    <button class="flex items-center gap-2 h-10 px-6 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-semibold hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">
+      重設預設值
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+function saveSettings() {
+  showToast('設定已儲存（此為 UI 展示，尚未持久化）');
+}
+</script>
+{% endblock %}

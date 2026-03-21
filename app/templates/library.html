@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}資源庫 - Open2work{% endblock %}
+
+{% block content %}
+<div class="px-6 py-6 lg:px-8">
+  <!-- Page Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
+    <div class="flex items-center gap-3 flex-wrap">
+      <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100 mr-2">物件模板庫</h1>
+      <button class="flex h-9 items-center gap-2 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-slate-700 px-4 text-sm font-medium shadow-sm hover:border-primary/50 transition-colors">
+        <span>篩選</span>
+        <span class="material-symbols-outlined text-lg">filter_list</span>
+      </button>
+      <button class="flex h-9 items-center gap-2 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-slate-700 px-4 text-sm font-medium shadow-sm hover:border-primary/50 transition-colors">
+        <span class="material-symbols-outlined text-lg text-primary">check_circle</span>
+        <span>信心度 &gt; 80%</span>
+      </button>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-slate-500 text-sm font-medium">{{ templates|length if templates is defined else 4 }} 個模板</span>
+      <button onclick="addTemplate()" class="flex items-center gap-2 h-9 px-4 bg-primary text-white rounded-xl text-sm font-bold shadow-sm shadow-primary/20 hover:bg-primary/90 transition-colors">
+        <span class="material-symbols-outlined text-sm">add</span>新增模板
+      </button>
+    </div>
+  </div>
+
+  <!-- Template Gallery Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+    <!-- Template Card 1 -->
+    <div class="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-lg transition-all group">
+      <div class="relative aspect-video w-full overflow-hidden bg-slate-200 dark:bg-zinc-800">
+        <div class="w-full h-full bg-slate-200 dark:bg-zinc-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-4xl text-slate-400">lock</span>
+        </div>
+        <div class="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm uppercase tracking-wider">信心度 (高)</div>
+        <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <button class="bg-white text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+            <span class="material-symbols-outlined text-sm">open_in_new</span>使用
+          </button>
+        </div>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="flex justify-between items-start">
+          <h3 class="font-bold text-slate-900 dark:text-zinc-100 group-hover:text-primary transition-colors">登錄表單容器</h3>
+          <button class="text-slate-400 cursor-pointer hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">閾值</span>
+            <span class="font-mono font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded">0.95</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">使用量</span>
+            <span class="text-slate-700 dark:text-slate-300 font-bold">驗證流程 (主)</span>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-50 dark:border-slate-800 flex flex-wrap gap-1.5">
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">#安全性</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">#入口</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Template Card 2 -->
+    <div class="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-lg transition-all group">
+      <div class="relative aspect-video w-full overflow-hidden bg-slate-200 dark:bg-zinc-800">
+        <div class="w-full h-full bg-slate-200 dark:bg-zinc-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-4xl text-slate-400">smart_button</span>
+        </div>
+        <div class="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm uppercase tracking-wider">信心度 (需檢視)</div>
+        <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <button class="bg-white text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+            <span class="material-symbols-outlined text-sm">open_in_new</span>使用
+          </button>
+        </div>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="flex justify-between items-start">
+          <h3 class="font-bold text-slate-900 dark:text-zinc-100 group-hover:text-primary transition-colors">主要按鈕組件</h3>
+          <button class="text-slate-400 cursor-pointer hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">閾值</span>
+            <span class="font-mono font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded">0.82</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">使用量</span>
+            <span class="text-slate-700 dark:text-slate-300 font-bold">全域設計系統</span>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-50 dark:border-slate-800 flex flex-wrap gap-1.5">
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">#UI組件</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">#按鈕</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Template Card 3 -->
+    <div class="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-lg transition-all group">
+      <div class="relative aspect-video w-full overflow-hidden bg-slate-200 dark:bg-zinc-800">
+        <div class="w-full h-full bg-slate-200 dark:bg-zinc-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-4xl text-slate-400">table_chart</span>
+        </div>
+        <div class="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm uppercase tracking-wider">信心度 (高)</div>
+        <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <button class="bg-white text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+            <span class="material-symbols-outlined text-sm">open_in_new</span>使用
+          </button>
+        </div>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="flex justify-between items-start">
+          <h3 class="font-bold text-slate-900 dark:text-zinc-100 group-hover:text-primary transition-colors">資料表格 OCR 區域</h3>
+          <button class="text-slate-400 cursor-pointer hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">閾值</span>
+            <span class="font-mono font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded">0.98</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">使用量</span>
+            <span class="text-slate-700 dark:text-slate-300 font-bold">報表引擎</span>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-50 dark:border-slate-800 flex flex-wrap gap-1.5">
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">#提取</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">#OCR</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Template Card 4 -->
+    <div class="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-lg transition-all group">
+      <div class="relative aspect-video w-full overflow-hidden bg-slate-200 dark:bg-zinc-800">
+        <div class="w-full h-full bg-slate-200 dark:bg-zinc-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-4xl text-slate-400">search</span>
+        </div>
+        <div class="absolute top-2 left-2 bg-slate-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm uppercase tracking-wider">草稿</div>
+        <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <button class="bg-white text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+            <span class="material-symbols-outlined text-sm">open_in_new</span>使用
+          </button>
+        </div>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="flex justify-between items-start">
+          <h3 class="font-bold text-slate-900 dark:text-zinc-100 group-hover:text-primary transition-colors">搜尋模組</h3>
+          <button class="text-slate-400 cursor-pointer hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">閾值</span>
+            <span class="font-mono font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded">0.75</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">使用量</span>
+            <span class="text-slate-700 dark:text-slate-300 font-bold">登陸頁面</span>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-50 dark:border-slate-800 flex flex-wrap gap-1.5">
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-500 uppercase tracking-tight">#導覽</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add New Card -->
+    <button onclick="addTemplate()" class="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border-dashed border-2 border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md hover:border-primary/40 transition-all group items-center justify-center min-h-[280px] cursor-pointer">
+      <div class="flex flex-col items-center gap-3 text-slate-400 group-hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-4xl">add_circle</span>
+        <span class="text-sm font-bold">新增模板</span>
+      </div>
+    </button>
+  </div>
+
+</div>
+
+<!-- Footer bar -->
+<footer class="bg-white dark:bg-zinc-900 border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex flex-wrap justify-between items-center gap-4 mt-auto z-10">
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">引擎：運行中</span>
+    </div>
+  </div>
+  <div class="flex gap-4">
+    <button class="text-[10px] font-bold text-slate-600 dark:text-slate-400 hover:text-primary transition-colors uppercase tracking-widest">匯出庫</button>
+    <button class="text-[10px] font-bold text-slate-600 dark:text-slate-400 hover:text-primary transition-colors uppercase tracking-widest">批次編輯</button>
+  </div>
+</footer>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+function addTemplate() {
+  showToast('新增模板功能即將推出', 'success');
+}
+</script>
+{% endblock %}
